@@ -1,13 +1,30 @@
+// index.js (бек)
 import Fastify from "fastify";
-
-const app = Fastify({ logger: true });
-app.get("/health", { logLevel: "warn" }, async () => ({ ok: true }));
-app.get("/", async () => ({ message: "Olejra API is running" }));
+import cors from "@fastify/cors";
 
 const PORT = Number(process.env.PORT || 5174);
 const HOST = "0.0.0.0";
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 
-app.listen({ port: PORT, host: HOST }).catch((err) => {
-  app.log.error(err);
-  process.exit(1);
-});
+const app = Fastify({ logger: true });
+
+async function start() {
+  await app.register(cors, {
+    origin: FRONTEND_ORIGIN,
+    credentials: true,
+  });
+
+  app.get("/api/hello", async () => ({ message: "Hello from Olejra API 👋" }));
+  app.post("/api/echo", async (req) => ({ youSent: req.body ?? null }));
+  app.get("/", async () => ({ message: "Olejra API is running" }));
+
+  try {
+    await app.listen({ port: PORT, host: HOST });
+    app.log.info(`➡️  Listening on http://localhost:${PORT}`);
+  } catch (err) {
+    app.log.error(err);
+    process.exit(1);
+  }
+}
+
+start();
