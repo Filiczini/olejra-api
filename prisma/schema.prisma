@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -7,4 +6,15 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/// User account used for login.
+/// We store only a bcrypt hash, never the raw password.
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique @db.VarChar(254)
+  passwordHash  String   @db.VarChar(100)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
