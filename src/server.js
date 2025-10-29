@@ -1,7 +1,10 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import authRoutes from "./routes/auth.js";
 
 const PORT = Number(process.env.PORT || 5174);
+
+const API_PREFIX = "/api";
 
 // Static user && tasks for board
 const fakeUser = { email: "admin@admin.ua", password: "1234" };
@@ -21,6 +24,7 @@ const fakeTasks = [
 
 const app = Fastify();
 await app.register(cors, { origin: true });
+await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 
 // Get all tasks
 app.get("/tasks", async () => fakeTasks);
