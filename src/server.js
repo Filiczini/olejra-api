@@ -22,7 +22,10 @@ const fakeTasks = [
   { id: 3, title: "To learn React for skill matrix", status: "BACKLOG" },
 ];
 
-const app = Fastify();
+const app = Fastify({
+  logger: true,
+  ajv: { customOptions: { allErrors: true, removeAdditional: true, useDefaults: true, coerceTypes: "array" } },
+});
 await app.register(cors, { origin: true });
 await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 
