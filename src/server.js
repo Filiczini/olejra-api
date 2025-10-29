@@ -1,5 +1,8 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
+import jwt from "@fastify/jwt";
+
 import authRoutes from "./routes/auth.js";
 
 const PORT = Number(process.env.PORT || 5174);
@@ -22,9 +25,20 @@ const fakeTasks = [
   { id: 3, title: "To learn React for skill matrix", status: "BACKLOG" },
 ];
 
-const app = Fastify();
-await app.register(cors, { origin: true });
+const app = Fastify({
+  logger: true,
+  ajv: { customOptions: { allErrors: true, removeAdditional: false, useDefaults: true, coerceTypes: "array" } },
+});
+
+// CORS for frontend; allow credentials for cookie-based auth
+await app.register(cors, { origin: process.env.CORS_ORIGIN || true, credentials: true });
 await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
+// Enable cookies and JWT
+await app.register(cookie, { hook: "onRequest" });
+await app.register(jwt, {
+  secret: process.env.JWT_SECRET || "dev_secret_change_me",
+  cookie: { cookieName: "olejra_token", signed: false },
+});
 
 // Get all tasks
 app.get("/tasks", async () => fakeTasks);
