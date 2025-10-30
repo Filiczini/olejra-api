@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
 
+import prismaPlugin from "./plugins/prisma.js";
 import authRoutes from "./routes/auth.js";
 
 const PORT = Number(process.env.PORT || 5174);
@@ -32,13 +33,14 @@ const app = Fastify({
 
 // CORS for frontend; allow credentials for cookie-based auth
 await app.register(cors, { origin: process.env.CORS_ORIGIN || true, credentials: true });
-await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 // Enable cookies and JWT
 await app.register(cookie, { hook: "onRequest" });
 await app.register(jwt, {
   secret: process.env.JWT_SECRET || "dev_secret_change_me",
   cookie: { cookieName: "olejra_token", signed: false },
 });
+await app.register(prismaPlugin);
+await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 
 // Get all tasks
 app.get("/tasks", async () => fakeTasks);
