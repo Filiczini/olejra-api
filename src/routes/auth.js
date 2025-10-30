@@ -28,8 +28,11 @@ export default async function authRoutes(app) {
         },
       },
     },
-    async (_req, reply) => {
-      return reply.code(501).send({ error: "Not implemented" });
+    async (req, reply) => {
+      const { email } = req.body;
+      const user = await app.prisma.user.findUnique({ where: { email } });
+      if (!user) reply.code(401).send({ error: "Invalid Credentials" });
+      return reply.send({ ok: true });
     }
   );
 
@@ -47,9 +50,6 @@ export default async function authRoutes(app) {
         },
       },
     },
-    async (_req, reply) => {
-      // Real logout logic (clear cookie) will be added later.
-      return reply.code(501).send({ error: "Not implemented" });
-    }
+    async (req, reply) => reply.code(501).send({ error: "Not implemented" })
   );
 }
