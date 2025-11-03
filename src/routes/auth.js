@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+
 export default async function authRoutes(app) {
   app.post(
     "/login",
@@ -29,9 +31,23 @@ export default async function authRoutes(app) {
       },
     },
     async (req, reply) => {
-      const { email } = req.body;
+      const { email, password } = req.body;
+
       const user = await app.prisma.user.findUnique({ where: { email } });
-      if (!user) reply.code(401).send({ error: "Invalid Credentials" });
+      if (!user) return reply.code(401).send({ error: "Invalid Credentials" });
+
+      const hash = user.passwordHash ?? "";
+      const ok = await bcrypt.compare(password, hash);
+      if (!ok) return reply.code(401).send({ error: "Invalid credentials" });
+
+      const token = await reply.jwtSign({ uid: user.id, email: user.email }, { expiresIn: "7d" });
+      reply.setCookie("olejra_token", token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
       return reply.send({ ok: true });
     }
   );
@@ -50,6 +66,9 @@ export default async function authRoutes(app) {
         },
       },
     },
-    async (req, reply) => reply.code(501).send({ error: "Not implemented" })
+    async (req, reply) => {
+      reply.clearCookie("olejra_token", { path: "/" });
+      return reply.send({ ok: true });
+    }
   );
 }
