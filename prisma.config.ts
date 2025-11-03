@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 // Load env from prisma/.env so env('DATABASE_URL') works in config
-dotenv.config({ path: "prisma/.env" });
+dotenv.config({ path: ".env" });
 import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
