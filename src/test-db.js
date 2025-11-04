@@ -4,9 +4,8 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🟢 Testing DB connection...");
+  console.log("Testing DB connection...");
 
-  // Fetch all users
   const users = await prisma.user.findMany();
 
   console.log("Users in DB:", users);
@@ -14,7 +13,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Error:", e);
+    console.error("Error:", e);
   })
   .finally(async () => {
     await prisma.$disconnect();

@@ -7,10 +7,10 @@
 
 ## 🚀 Tech Stack
 
-- **Node.js 20**  
-- **Fastify**  
-- (planned) **PostgreSQL + Prisma**  
-- (planned) **JWT authentication**
+- **Node.js 20**
+- **Fastify**
+- **PostgreSQL + Prisma**
+- **JWT authentication**
 
 ---
 
@@ -19,19 +19,25 @@
 ```text
 olejra-backend/
 ├─ src/
-│  └─ index.js      # main server file
+│  └─ generated
+│  └─ plugins
+│  └─ routes
+│  └─ server.js      # main server file
+│  └─ test-db        # check db
 ├─ package.json
 ├─ .gitignore
 └─ README.md
 ```
+
 ---
 
 ## ▶️ Getting Started
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/<user>/olejra-backend.git
+   git clone https://github.com/filiczini/olejra-api
    cd olejra-backend
+   ```
 2. **Install dependencies**
    ```bash
    npm install
@@ -43,15 +49,21 @@ olejra-backend/
    # production mode
    npm start
    ```
+
 ---
+
 ## 🌐 API Endpoints (current)
+
 ```bash
-GET / → { "message": "Olejra API is running" }
-GET /health → { "ok": true }
+POST /api/auth/login ['ok', 'invalid credentials']
+POST /api/auth/logout -> ok
+GET /api/auth/me -> user (id, email)
 ```
+
 ---
 
 ## 🔮 Roadmap
+
 ```bash
 Add CORS & dotenv
 PostgreSQL integration (Neon/Supabase)
@@ -59,4 +71,5 @@ Prisma schema & migrations
 Auth (login with JWT)
 Tasks API (create, move forward, done)
 ```
+
 ---
