@@ -71,4 +71,46 @@ export default async function authRoutes(app) {
       return reply.send({ ok: true });
     }
   );
+  app.get(
+    "/me",
+    {
+      schema: {
+        response: {
+          200: {
+            type: "object",
+            required: ["user"],
+            additionalProperties: false,
+            properties: {
+              user: {
+                type: "object",
+                required: ["id", "email"],
+                additionalProperties: false,
+                properties: {
+                  id: { type: "string" },
+                  email: { type: "string", format: "email" },
+                },
+              },
+            },
+          },
+          401: {
+            type: "object",
+            required: ["error"],
+            additionalProperties: false,
+            properties: { error: { type: "string" } },
+          },
+        },
+      },
+      preHandler: async (req, reply) => {
+        try {
+          await req.jwtVerify({ onlyCookie: true });
+        } catch {
+          return reply.code(401).send({ error: "Unauthorized" });
+        }
+      },
+    },
+    async (req) => {
+      console.log(req.user);
+      return { user: { id: req.user.uid, email: req.user.email } };
+    }
+  );
 }
