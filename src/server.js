@@ -1,3 +1,4 @@
+import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
@@ -10,8 +11,7 @@ const PORT = Number(process.env.PORT || 5174);
 
 const API_PREFIX = "/api";
 
-// Static user && tasks for board
-const fakeUser = { email: "admin@admin.ua", password: "1234" };
+// Static tasks for board
 const fakeTasks = [
   {
     id: 1,
@@ -44,14 +44,6 @@ await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 
 // Get all tasks
 app.get("/tasks", async () => fakeTasks);
-
-app.post("/login", async (req, reply) => {
-  const { email, password } = req.body;
-  if (email === fakeUser.email && password === fakeUser.password) {
-    return { success: true };
-  }
-  reply.code(401).send({ success: false, message: "Invalid credentials" });
-});
 
 app.post("/tasks/:id/advance", async (req, reply) => {
   const { id } = req.params;
