@@ -1,11 +1,11 @@
-# 📦 Olejra Backend
+# Olejra Backend
 
 > Simple backend for the **Olejra** project — a lightweight Jira-like board.  
 > Built with **Node.js + Fastify**, serves as API for the frontend.
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Node.js 20**
 - **Fastify**
@@ -14,7 +14,7 @@
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 olejra-backend/
@@ -31,7 +31,7 @@ olejra-backend/
 
 ---
 
-## ▶️ Getting Started
+## Getting Started
 
 1. **Clone the repo**
    ```bash
@@ -52,7 +52,7 @@ olejra-backend/
 
 ---
 
-## 🌐 API Endpoints (current)
+## API Endpoints (current)
 
 ```bash
 POST /api/auth/login ['ok', 'invalid credentials']
@@ -62,14 +62,14 @@ GET /api/auth/me -> user (id, email)
 
 ---
 
-## 🔮 Roadmap
+## Roadmap
 
 ```bash
-Add CORS & dotenv
-PostgreSQL integration (Neon/Supabase)
-Prisma schema & migrations
-Auth (login with JWT)
-Tasks API (create, move forward, done)
+[x] CORS & dotenv
+[x] Cookie-based auth (`/api/auth/login`, `/me`, `/logout`)
+[ ] Prisma schema & migrations for tasks
+[ ] Tasks API (GET list, POST create, POST /:id/advance, mark done) — protected via preHandler
+[ ] Swagger UI (optional)
 ```
 
 ---
