@@ -52,20 +52,12 @@ olejra-backend/
 
 ---
 
-## 🌐 API
-
-### Flow
-
-1. `POST /api/auth/login` → server signs JWT and sets **httpOnly** cookie
-2. `GET /api/auth/me` (private) → verifies JWT from cookie via `req.jwtVerify({ onlyCookie: true })`, returns a minimal profile
-3. `POST /api/auth/logout` → clears cookie
-
-### Responses
+## API Endpoints (current)
 
 ```bash
-- `200 OK` → `{ "ok": true }` + `Set-Cookie: olejra_token=...; HttpOnly; SameSite=Lax`
-- `400 Bad Request` → AJV validation error (invalid email or password too short)
-- `401 Unauthorized` → `{ "error": "Invalid credentials" }`
+POST /api/auth/login ['ok', 'invalid credentials']
+POST /api/auth/logout -> ok
+GET /api/auth/me -> user (id, email)
 ```
 
 ---
