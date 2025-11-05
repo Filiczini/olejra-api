@@ -36,7 +36,7 @@ olejra-backend/
 1. **Clone the repo**
    ```bash
    git clone https://github.com/filiczini/olejra-api
-   cd olejra-backend
+   cd olejra-api
    ```
 2. **Install dependencies**
    ```bash
@@ -52,7 +52,15 @@ olejra-backend/
 
 ---
 
-## API Endpoints (current)
+## 🌐 API
+
+### Flow
+
+1. `POST /api/auth/login` → server signs JWT and sets **httpOnly** cookie
+2. `GET /api/auth/me` (private) → verifies JWT from cookie via `req.jwtVerify({ onlyCookie: true })`, returns a minimal profile
+3. `POST /api/auth/logout` → clears cookie
+
+### Responses
 
 ```bash
 POST /api/auth/login ['ok', 'invalid credentials']
