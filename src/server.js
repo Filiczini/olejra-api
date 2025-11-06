@@ -29,19 +29,5 @@ await app.register(prismaPlugin);
 await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 await app.register(tasksRoutes, { prefix: `${API_PREFIX}/tasks` });
 
-// Get all tasks
-app.get('/tasks', async () => fakeTasks);
-
-app.post('/tasks/:id/advance', async (req, reply) => {
-  const { id } = req.params;
-  const task = fakeTasks.find((t) => t.id === Number(id));
-  if (!task) return reply.code(404).send({ message: 'Not found' });
-
-  const order = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'DONE'];
-  const indexOrder = order.indexOf(task.status);
-  if (indexOrder < order.length - 1) task.status = order[indexOrder + 1];
-  return task;
-});
-
 app.listen({ port: PORT });
 console.log(`Server runing on ${PORT}`);
