@@ -67,7 +67,12 @@ export default async function authRoutes(app) {
       },
     },
     async (req, reply) => {
-      reply.clearCookie('olejra_token', { path: '/' });
+      reply.clearCookie('olejra_token', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
       return reply.send({ ok: true });
     }
   );
