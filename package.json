@@ -7,12 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "NODE_ENV=development node src/server.js",
     "start": "node src/server.js",
-    "generate": "prisma generate --schema prisma/schema.prisma",
-    "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
-    "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
-    "studio": "prisma studio --schema prisma/schema.prisma",
-    "seed:db": "prisma db seed",
-    "db:reset": "prisma migrate reset --force"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node prisma/seed.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
