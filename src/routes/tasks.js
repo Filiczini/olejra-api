@@ -1,22 +1,20 @@
+// Task board routes: protected by JWT cookie and backed by Prisma.
+
 const STATUS_FLOW = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'DONE'];
 
-const tasks = [
-  { id: 1, title: 'Design API', status: 'BACKLOG' },
-  { id: 2, title: 'Setup DB', status: 'TODO' },
-  { id: 3, title: 'Create board UI', status: 'IN_PROGRESS' },
-];
+async function authPreHandler(req, reply) {
+  try {
+    await req.jwtVerify({ onlyCookie: true });
+  } catch {
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+}
 
 export default async function tasksRoutes(app) {
   app.get(
     '/',
     {
-      preHandler: async (req, reply) => {
-        try {
-          await req.jwtVerify({ onlyCookie: true });
-        } catch {
-          return reply.code(401).send({ error: 'Unauthorized' });
-        }
-      },
+      preHandler: authPreHandler,
       schema: {
         response: {
           200: {
@@ -41,24 +39,32 @@ export default async function tasksRoutes(app) {
         },
       },
     },
-    async () => tasks
+    async () => {
+      // Read tasks from PostgreSQL via Prisma. Sorting ensures stable column order.
+      const rows = await app.prisma.task.findMany({
+        orderBy: [{ status: 'asc' }, { order: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          title: true,
+          status: true,
+        },
+      });
+
+      return rows;
+    }
   );
   app.post(
     '/:id/advance',
     {
-      preHandler: async (req, reply) => {
-        try {
-          await req.jwtVerify({ onlyCookie: true });
-        } catch {
-          return reply.code(401).send({ error: 'Unauthorized' });
-        }
-      },
+      preHandler: authPreHandler,
       schema: {
         params: {
           type: 'object',
           required: ['id'],
           additionalProperties: false,
-          properties: { id: { type: 'integer' } },
+          properties: {
+            id: { type: 'integer' },
+          },
         },
         response: {
           200: {
@@ -75,25 +81,43 @@ export default async function tasksRoutes(app) {
             type: 'object',
             required: ['error'],
             additionalProperties: false,
-            properties: { error: { type: 'string' } },
+            properties: {
+              error: { type: 'string' },
+            },
           },
           404: {
             type: 'object',
             required: ['error'],
             additionalProperties: false,
-            properties: { error: { type: 'string' } },
+            properties: {
+              error: { type: 'string' },
+            },
           },
         },
       },
     },
     async (req, reply) => {
       const id = Number(req.params.id);
-      const task = tasks.find((t) => t.id === id);
-      if (!task) return reply.code(404).send({ error: 'Not found' });
 
-      const i = STATUS_FLOW.indexOf(task.status);
-      if (i < STATUS_FLOW.length - 1) task.status = STATUS_FLOW[i + 1];
-      return task;
+      const existing = await app.prisma.task.findUnique({
+        where: { id },
+        select: { id: true, title: true, status: true },
+      });
+
+      if (!existing) {
+        return reply.code(404).send({ error: 'Not found' });
+      }
+
+      const currentIndex = STATUS_FLOW.indexOf(existing.status);
+      const nextStatus = currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : existing.status;
+
+      const updated = await app.prisma.task.update({
+        where: { id },
+        data: { status: nextStatus },
+        select: { id: true, title: true, status: true },
+      });
+
+      return updated;
     }
   );
 }
