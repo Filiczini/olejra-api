@@ -109,7 +109,10 @@ export default async function tasksRoutes(app) {
       }
 
       const currentIndex = STATUS_FLOW.indexOf(existing.status);
-      const nextStatus = currentIndex < STATUS_FLOW.length - 1 ? STATUS_FLOW[currentIndex + 1] : existing.status;
+      const nextStatus =
+        currentIndex < STATUS_FLOW.length - 1
+          ? STATUS_FLOW[currentIndex + 1]
+          : existing.status;
 
       const updated = await app.prisma.task.update({
         where: { id },

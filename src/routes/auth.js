@@ -40,7 +40,10 @@ export default async function authRoutes(app) {
       const ok = await bcrypt.compare(password, hash);
       if (!ok) return reply.code(401).send({ error: 'Invalid Credentials' });
 
-      const token = await reply.jwtSign({ uid: user.id, email: user.email }, { expiresIn: '7d' });
+      const token = await reply.jwtSign(
+        { uid: user.id, email: user.email },
+        { expiresIn: '7d' }
+      );
       reply.setCookie('olejra_token', token, {
         httpOnly: true,
         sameSite: 'lax',
