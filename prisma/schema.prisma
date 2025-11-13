@@ -14,18 +14,17 @@ enum Status {
   DONE
 }
 
-
 /// User account used for login.
 /// We store only a bcrypt hash, never the raw password.
 
 model User {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique @db.VarChar(254)
-  passwordHash  String   @db.VarChar(100)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique @db.VarChar(254)
+  passwordHash String   @db.VarChar(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tasks        Task[]
 }
-
 
 model Task {
   id          Int      @id @default(autoincrement())
