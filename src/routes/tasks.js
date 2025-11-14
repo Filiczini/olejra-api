@@ -11,6 +11,7 @@ async function authPreHandler(req, reply) {
 }
 
 export default async function tasksRoutes(app) {
+  // GET /api/tasks – return all tasks.
   app.get(
     '/',
     {
@@ -29,12 +30,6 @@ export default async function tasksRoutes(app) {
                 status: { type: 'string', enum: STATUS_FLOW },
               },
             },
-          },
-          400: {
-            type: 'object',
-            required: ['error'],
-            additionalProperties: false,
-            properties: { error: { type: 'string' } },
           },
         },
       },
@@ -58,12 +53,14 @@ export default async function tasksRoutes(app) {
     {
       preHandler: authPreHandler,
       schema: {
-        params: {
+        body: {
           type: 'object',
-          required: ['id'],
+          required: ['taskId', 'from', 'to'],
           additionalProperties: false,
           properties: {
-            id: { type: 'integer' },
+            taskId: { type: 'integer' },
+            from: { type: 'string', enum: STATUS_FLOW },
+            to: { type: 'string', enum: STATUS_FLOW },
           },
         },
         response: {
@@ -97,26 +94,35 @@ export default async function tasksRoutes(app) {
       },
     },
     async (req, reply) => {
-      const id = Number(req.params.id);
+      const { taskId, from, to } = req.body;
 
-      const existing = await app.prisma.task.findUnique({
-        where: { id },
-        select: { id: true, title: true, status: true },
+      const task = await app.prisma.task.findUnique({
+        where: { id: taskId },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+        },
       });
 
-      if (!existing) {
-        return reply.code(404).send({ error: 'Not found' });
+      if (!task) reply.code(404).send({ error: 'Task not found' });
+
+      if (task.status !== from) {
+        return reply
+          .code(400)
+          .send({ error: 'Invalid from status for this task' });
       }
 
-      const currentIndex = STATUS_FLOW.indexOf(existing.status);
-      const nextStatus =
-        currentIndex < STATUS_FLOW.length - 1
-          ? STATUS_FLOW[currentIndex + 1]
-          : existing.status;
+      const fromIndex = STATUS_FLOW.indexOf(from);
+      const toIndex = STATUS_FLOW(to);
+
+      const isNextStep = toIndex - fromIndex === 1;
+      if (!isNextStep)
+        reply.code(400).send({ error: 'Usupported status transition' });
 
       const updated = await app.prisma.task.update({
-        where: { id },
-        data: { status: nextStatus },
+        where: { id: taskId },
+        data: { status: to },
         select: { id: true, title: true, status: true },
       });
 
