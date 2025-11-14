@@ -49,7 +49,7 @@ export default async function tasksRoutes(app) {
     }
   );
   app.post(
-    '/:id/advance',
+    '/advance',
     {
       preHandler: authPreHandler,
       schema: {
@@ -114,11 +114,12 @@ export default async function tasksRoutes(app) {
       }
 
       const fromIndex = STATUS_FLOW.indexOf(from);
-      const toIndex = STATUS_FLOW(to);
+      const toIndex = STATUS_FLOW.indexOf(to);
 
       const isNextStep = toIndex - fromIndex === 1;
-      if (!isNextStep)
-        reply.code(400).send({ error: 'Usupported status transition' });
+      if (!isNextStep) {
+        return reply.code(400).send({ error: 'Usupported status transition' });
+      }
 
       const updated = await app.prisma.task.update({
         where: { id: taskId },
