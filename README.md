@@ -10,7 +10,7 @@
 - **Node.js 20**
 - **Fastify**
 - **PostgreSQL + Prisma**
-- **JWT authentication**
+- **JWT authentication (httpOnly cookies) + Prisma**
 
 ---
 
@@ -58,7 +58,7 @@ olejra-backend/
 
 1. `POST /api/auth/login` → server signs JWT and sets **httpOnly** cookie
 2. `GET /api/auth/me` (private) → verifies JWT from cookie via `req.jwtVerify({ onlyCookie: true })`, returns a minimal profile
-3. `POST /api/auth/logout` → clears cookie
+3. `POST /api/auth/logout` → clears auth cookie
 
 ### Responses
 
@@ -70,13 +70,21 @@ GET /api/auth/me -> user (id, email)
 
 ---
 
+## Tasks API
+
+- `GET /api/tasks` → list user's tasks
+- `POST /api/tasks` → create task
+- `POST /api/tasks/advance` → advance task via payload `{ taskId, from, to }`
+
+---
+
 ## Roadmap
 
 ```bash
-[x] CORS & dotenv
-[x] Cookie-based auth (`/api/auth/login`, `/me`, `/logout`)
-[ ] Prisma schema & migrations for tasks
-[ ] Tasks API (GET list, POST create, POST /:id/advance, mark done) — protected via preHandler
+[x] Cookie-based auth
+[x] Prisma schema & migrations
+[x] Tasks API (GET, POST create, POST advance)
+[ ] Task details API (GET /tasks/:id)
 [ ] Swagger UI (optional)
 ```
 
