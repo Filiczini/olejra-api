@@ -48,6 +48,75 @@ export default async function tasksRoutes(app) {
       return rows;
     }
   );
+  // GET /api/tasks/:id – return full task details for the current user.
+  app.get(
+    '/:id',
+    {
+      preHandler: authPreHandler,
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          additionalProperties: false,
+          properties: {
+            id: { type: 'integer' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            required: ['id', 'title', 'status'],
+            additionalProperties: false,
+            properties: {
+              id: { type: 'integer' },
+              title: { type: 'string' },
+              description: { type: 'string', nullable: true },
+              status: { type: 'string', enum: STATUS_FLOW },
+              createdAt: { type: 'string', format: 'data-time' },
+              updatedAt: { type: 'string', format: 'data-time' },
+            },
+          },
+          401: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+
+      const task = await app.prisma.task.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!task) {
+        return reply.code(404).send({ error: 'Task not found. Brah...' });
+      }
+      return task;
+    }
+  );
+  // POST /api/tasks/advance – move task forward one status.
   app.post(
     '/advance',
     {
