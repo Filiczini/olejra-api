@@ -128,7 +128,7 @@ export default async function tasksRoutes(app) {
           required: ['id'],
           additionalProperties: false,
           properties: {
-            id: { type: 'integer' },
+            id: { type: 'string' },
           },
         },
         body: {
@@ -156,8 +156,8 @@ export default async function tasksRoutes(app) {
               title: { type: 'string' },
               description: { type: 'string', nullable: true },
               status: { type: 'string', enum: STATUS_FLOW },
-              createdAt: { type: 'string', format: 'data-time' },
-              updatedAt: { type: 'string', format: 'data-time' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
             },
           },
           400: {
@@ -165,9 +165,7 @@ export default async function tasksRoutes(app) {
             required: ['error'],
             additionalProperties: false,
             properties: {
-              error: {
-                type: 'string',
-              },
+              error: { type: 'string' },
             },
           },
           401: {
@@ -175,9 +173,7 @@ export default async function tasksRoutes(app) {
             required: ['error'],
             additionalProperties: false,
             properties: {
-              error: {
-                type: 'string',
-              },
+              error: { type: 'string' },
             },
           },
           404: {
@@ -185,9 +181,7 @@ export default async function tasksRoutes(app) {
             required: ['error'],
             additionalProperties: false,
             properties: {
-              error: {
-                type: 'string',
-              },
+              error: { type: 'string' },
             },
           },
         },
@@ -205,19 +199,25 @@ export default async function tasksRoutes(app) {
         return reply.code(400).send({ error: 'Nothing to update' });
       }
 
-      const updated = await app.prisma.task.update({
-        where: { id },
-        data,
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      return updated;
+      try {
+        const updated = await app.prisma.task.update({
+          where: { id },
+          data,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        return reply.send(updated);
+      } catch (err) {
+        req.log.error({ err }, 'Failed to update task'); // log to Pino
+        return reply.code(500).send({ error: 'Failed to update task' });
+      }
     }
   );
   // POST /api/tasks/advance – move task forward one status.
