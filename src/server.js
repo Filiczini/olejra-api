@@ -30,6 +30,7 @@ await app.register(cookie, { hook: 'onRequest' });
 await app.register(cors, {
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
 });
 await app.register(jwt, {
   secret: process.env.JWT_SECRET,
