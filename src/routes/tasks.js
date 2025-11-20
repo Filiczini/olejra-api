@@ -72,8 +72,8 @@ export default async function tasksRoutes(app) {
               title: { type: 'string' },
               description: { type: 'string', nullable: true },
               status: { type: 'string', enum: STATUS_FLOW },
-              createdAt: { type: 'string', format: 'data-time' },
-              updatedAt: { type: 'string', format: 'data-time' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
             },
           },
           401: {
@@ -84,7 +84,7 @@ export default async function tasksRoutes(app) {
               error: { type: 'string' },
             },
           },
-          401: {
+          404: {
             type: 'object',
             required: ['error'],
             additionalProperties: false,
@@ -97,6 +97,10 @@ export default async function tasksRoutes(app) {
     },
     async (req, reply) => {
       const id = Number(req.params.id);
+
+      if (Number.isNaN(id)) {
+        return reply.code(400).send({ error: 'Invalid task id' });
+      }
 
       const task = await app.prisma.task.findUnique({
         where: { id },
@@ -144,6 +148,10 @@ export default async function tasksRoutes(app) {
               type: 'string',
               maxLength: 2000,
             },
+            status: {
+              type: 'string',
+              enum: STATUS_FLOW,
+            },
           },
         },
         response: {
@@ -189,11 +197,18 @@ export default async function tasksRoutes(app) {
     },
     async (req, reply) => {
       const id = Number(req.params.id);
-      const { title, description } = req.body ?? {};
+      if (Number.isNaN(id)) {
+        return reply.code(400).send({ error: 'Invalid task id' });
+      }
+
+      const { title, description, status } = req.body ?? {};
 
       const data = {};
       if (typeof title === 'string') data.title = title;
       if (typeof description === 'string') data.description = description;
+      if (typeof status === 'string' && STATUS_FLOW.includes(status)) {
+        data.status = status;
+      }
 
       if (Object.keys(data).length === 0) {
         return reply.code(400).send({ error: 'Nothing to update' });
@@ -215,6 +230,11 @@ export default async function tasksRoutes(app) {
 
         return reply.send(updated);
       } catch (err) {
+        // Prisma P2025 means record to update was not found
+        if (err.code === 'P2025') {
+          return reply.code(404).send({ error: 'Task not found' });
+        }
+
         req.log.error({ err }, 'Failed to update task'); // log to Pino
         return reply.code(500).send({ error: 'Failed to update task' });
       }
@@ -291,7 +311,7 @@ export default async function tasksRoutes(app) {
 
       const isNextStep = toIndex - fromIndex === 1;
       if (!isNextStep)
-        return reply.code(400).send({ error: 'Usupported status transition' });
+        return reply.code(400).send({ error: 'Unsupported status transition' });
 
       const updated = await app.prisma.task.update({
         where: { id: taskId },
