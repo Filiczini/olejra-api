@@ -1,6 +1,6 @@
-// Task board routes: protected by JWT cookie and backed by Prisma.
+/// Task board routes: protected by JWT cookie and backed by Prisma.
 
-const STATUS_FLOW = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'DONE'];
+import { STATUS_FLOW, isNextStatus } from '../utils/status.js';
 
 async function authPreHandler(req, reply) {
   try {
@@ -306,12 +306,12 @@ export default async function tasksRoutes(app) {
           .send({ error: 'Invalid from status for this task' });
       }
 
-      const fromIndex = STATUS_FLOW.indexOf(from);
-      const toIndex = STATUS_FLOW.indexOf(to);
+      // Use shared helper to enforce "one step forward" rule.
+      const canMoveForward = isNextStatus(from, to);
 
-      const isNextStep = toIndex - fromIndex === 1;
-      if (!isNextStep)
+      if (!canMoveForward) {
         return reply.code(400).send({ error: 'Unsupported status transition' });
+      }
 
       const updated = await app.prisma.task.update({
         where: { id: taskId },
