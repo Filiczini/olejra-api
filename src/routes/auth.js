@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 
+const isProduction = process.env.NODE_ENV === 'production'; // Detect production environment
+
 export default async function authRoutes(app) {
   app.post(
     '/login',
@@ -46,8 +48,9 @@ export default async function authRoutes(app) {
       );
       reply.setCookie('olejra_token', token, {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        // In production frontend is on a different domain, so we need cross-site cookies.
+        sameSite: isProduction ? 'none' : 'lax',
+        secure: isProduction,
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
       });
@@ -72,8 +75,9 @@ export default async function authRoutes(app) {
     async (req, reply) => {
       reply.clearCookie('olejra_token', {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        // Use the same cookie settings as login to properly clear it.
+        sameSite: isProduction ? 'none' : 'lax',
+        secure: isProduction,
         path: '/',
       });
       return reply.send({ ok: true });
