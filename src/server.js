@@ -8,7 +8,8 @@ import prismaPlugin from './plugins/prisma.js';
 import authRoutes from './routes/auth.js';
 import tasksRoutes from './routes/tasks.js';
 
-const PORT = Number(process.env.PORT || 5174);
+const PORT = Number(process.env.PORT) || 10000;
+const HOST = '0.0.0.0'; // Render requires binding to 0.0.0.0 instead of localhost
 
 const API_PREFIX = '/api';
 
@@ -40,5 +41,11 @@ await app.register(prismaPlugin);
 await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
 await app.register(tasksRoutes, { prefix: `${API_PREFIX}/tasks` });
 
-app.listen({ port: PORT });
-console.log(`Server runing on ${PORT}`);
+try {
+  // Bind to 0.0.0.0 and use the PORT from the environment (Render sets this)
+  await app.listen({ port: PORT, host: HOST });
+  app.log.info(`Server listening on ${HOST}:${PORT}`);
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}
