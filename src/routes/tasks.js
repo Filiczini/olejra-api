@@ -1,6 +1,6 @@
-/// Task board routes: protected by JWT cookie and backed by Prisma.
+// Task board routes: protected by JWT cookie and backed by Prisma.
 
-import { STATUS_FLOW, isNextStatus } from '../utils/status.js';
+import { STATUS_FLOW, isNextStatus, isValidStatus } from '../utils/status.js';
 
 async function authPreHandler(req, reply) {
   try {
@@ -25,7 +25,7 @@ export default async function tasksRoutes(app) {
               required: ['id', 'title', 'status'],
               additionalProperties: false,
               properties: {
-                id: { type: 'integer' },
+                id: { type: 'integer' }, // id з БД приходить як число
                 title: { type: 'string' },
                 status: { type: 'string', enum: STATUS_FLOW },
               },
@@ -48,6 +48,7 @@ export default async function tasksRoutes(app) {
       return rows;
     }
   );
+
   // GET /api/tasks/:id – return full task details for the current user.
   app.get(
     '/:id',
@@ -59,7 +60,7 @@ export default async function tasksRoutes(app) {
           required: ['id'],
           additionalProperties: false,
           properties: {
-            id: { type: 'integer' },
+            id: { type: 'integer' }, // id у URL очікуємо як число
           },
         },
         response: {
@@ -74,6 +75,14 @@ export default async function tasksRoutes(app) {
               status: { type: 'string', enum: STATUS_FLOW },
               createdAt: { type: 'string', format: 'date-time' },
               updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          400: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
             },
           },
           401: {
@@ -115,13 +124,13 @@ export default async function tasksRoutes(app) {
       });
 
       if (!task) {
-        return reply.code(404).send({ error: 'Task not found. Brah...' });
+        return reply.code(404).send({ error: 'Task not found.' });
       }
       return task;
     }
   );
 
-  // PATCH /api/tasks/:id - update task title and/or description.
+  // PATCH /api/tasks/:id - update task title and/or description and status.
   app.patch(
     '/:id',
     {
@@ -132,7 +141,7 @@ export default async function tasksRoutes(app) {
           required: ['id'],
           additionalProperties: false,
           properties: {
-            id: { type: 'string' },
+            id: { type: 'integer' }, // уніфікуємо з GET /:id
           },
         },
         body: {
@@ -206,7 +215,9 @@ export default async function tasksRoutes(app) {
       const data = {};
       if (typeof title === 'string') data.title = title;
       if (typeof description === 'string') data.description = description;
-      if (typeof status === 'string' && STATUS_FLOW.includes(status)) {
+
+      // Allow updating status from Task Details page if it is a valid status.
+      if (typeof status === 'string' && isValidStatus(status)) {
         data.status = status;
       }
 
@@ -240,6 +251,7 @@ export default async function tasksRoutes(app) {
       }
     }
   );
+
   // POST /api/tasks/advance – move task forward one status.
   app.post(
     '/advance',
@@ -265,6 +277,14 @@ export default async function tasksRoutes(app) {
               id: { type: 'integer' },
               title: { type: 'string' },
               status: { type: 'string', enum: STATUS_FLOW },
+            },
+          },
+          400: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
             },
           },
           401: {
