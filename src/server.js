@@ -1,48 +1,51 @@
-import Fastify from "fastify";
-import cors from "@fastify/cors";
+import 'dotenv/config';
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
+import jwt from '@fastify/jwt';
 
-const PORT = Number(process.env.PORT || 5174);
+import prismaPlugin from './plugins/prisma.js';
+import authRoutes from './routes/auth.js';
+import tasksRoutes from './routes/tasks.js';
 
-// Static user && tasks for board
-const fakeUser = { email: "admin@admin.ua", password: "1234" };
-const fakeTasks = [
-  {
-    id: 1,
-    title: "Configure project for future work",
-    status: "BACKLOG",
+const PORT = Number(process.env.PORT) || 10000;
+const HOST = '0.0.0.0'; // Render requires binding to 0.0.0.0 instead of localhost
+
+const API_PREFIX = '/api';
+
+const app = Fastify({
+  logger: true,
+  ajv: {
+    customOptions: {
+      allErrors: true,
+      removeAdditional: false,
+      useDefaults: true,
+      coerceTypes: 'array',
+    },
   },
-  {
-    id: 2,
-    title: "To learn JavaScript for skill matrix",
-    status: "TODO",
-  },
-  { id: 3, title: "To learn React for skill matrix", status: "BACKLOG" },
-];
-
-const app = Fastify();
-await app.register(cors, { origin: true });
-
-// Get all tasks
-app.get("/tasks", async () => fakeTasks);
-
-app.post("/login", async (req, reply) => {
-  const { email, password } = req.body;
-  if (email === fakeUser.email && password === fakeUser.password) {
-    return { success: true };
-  }
-  reply.code(401).send({ success: false, message: "Invalid credentials" });
 });
 
-app.post("/tasks/:id/advance", async (req, reply) => {
-  const { id } = req.params;
-  const task = fakeTasks.find((t) => t.id === Number(id));
-  if (!task) return reply.code(404).send({ message: "Not found" });
-
-  const order = ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"];
-  const indexOrder = order.indexOf(task.status);
-  if (indexOrder < order.length - 1) task.status = order[indexOrder + 1];
-  return task;
+// Enable cookies and JWT
+await app.register(cookie, { hook: 'onRequest' });
+// CORS for frontend; allow credentials for cookie-based auth
+await app.register(cors, {
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
 });
+await app.register(jwt, {
+  secret: process.env.JWT_SECRET,
+  cookie: { cookieName: 'olejra_token' },
+});
+await app.register(prismaPlugin);
+await app.register(authRoutes, { prefix: `${API_PREFIX}/auth` });
+await app.register(tasksRoutes, { prefix: `${API_PREFIX}/tasks` });
 
-app.listen({ port: PORT });
-console.log(`Server runing on ${PORT}`);
+try {
+  // Bind to 0.0.0.0 and use the PORT from the environment (Render sets this)
+  await app.listen({ port: PORT, host: HOST });
+  app.log.info(`Server listening on ${HOST}:${PORT}`);
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}

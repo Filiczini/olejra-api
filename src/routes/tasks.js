@@ -1,0 +1,345 @@
+// Task board routes: protected by JWT cookie and backed by Prisma.
+
+import { STATUS_FLOW, isNextStatus, isValidStatus } from '../utils/status.js';
+
+async function authPreHandler(req, reply) {
+  try {
+    await req.jwtVerify({ onlyCookie: true });
+  } catch {
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+}
+
+export default async function tasksRoutes(app) {
+  // GET /api/tasks – return all tasks.
+  app.get(
+    '/',
+    {
+      preHandler: authPreHandler,
+      schema: {
+        response: {
+          200: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['id', 'title', 'status'],
+              additionalProperties: false,
+              properties: {
+                id: { type: 'integer' }, // id з БД приходить як число
+                title: { type: 'string' },
+                status: { type: 'string', enum: STATUS_FLOW },
+              },
+            },
+          },
+        },
+      },
+    },
+    async () => {
+      // Read tasks from PostgreSQL via Prisma. Sorting ensures stable column order.
+      const rows = await app.prisma.task.findMany({
+        orderBy: [{ status: 'asc' }, { order: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          title: true,
+          status: true,
+        },
+      });
+
+      return rows;
+    }
+  );
+
+  // GET /api/tasks/:id – return full task details for the current user.
+  app.get(
+    '/:id',
+    {
+      preHandler: authPreHandler,
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          additionalProperties: false,
+          properties: {
+            id: { type: 'integer' }, // id у URL очікуємо як число
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            required: ['id', 'title', 'status'],
+            additionalProperties: false,
+            properties: {
+              id: { type: 'integer' },
+              title: { type: 'string' },
+              description: { type: 'string', nullable: true },
+              status: { type: 'string', enum: STATUS_FLOW },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          400: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+
+      if (Number.isNaN(id)) {
+        return reply.code(400).send({ error: 'Invalid task id' });
+      }
+
+      const task = await app.prisma.task.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!task) {
+        return reply.code(404).send({ error: 'Task not found.' });
+      }
+      return task;
+    }
+  );
+
+  // PATCH /api/tasks/:id - update task title and/or description and status.
+  app.patch(
+    '/:id',
+    {
+      preHandler: authPreHandler,
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          additionalProperties: false,
+          properties: {
+            id: { type: 'integer' }, // уніфікуємо з GET /:id
+          },
+        },
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            title: {
+              type: 'string',
+              minLength: 1,
+              maxLength: 255,
+            },
+            description: {
+              type: 'string',
+              maxLength: 2000,
+            },
+            status: {
+              type: 'string',
+              enum: STATUS_FLOW,
+            },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            required: ['id', 'title', 'status'],
+            additionalProperties: false,
+            properties: {
+              id: { type: 'integer' },
+              title: { type: 'string' },
+              description: { type: 'string', nullable: true },
+              status: { type: 'string', enum: STATUS_FLOW },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          400: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) {
+        return reply.code(400).send({ error: 'Invalid task id' });
+      }
+
+      const { title, description, status } = req.body ?? {};
+
+      const data = {};
+      if (typeof title === 'string') data.title = title;
+      if (typeof description === 'string') data.description = description;
+
+      // Allow updating status from Task Details page if it is a valid status.
+      if (typeof status === 'string' && isValidStatus(status)) {
+        data.status = status;
+      }
+
+      if (Object.keys(data).length === 0) {
+        return reply.code(400).send({ error: 'Nothing to update' });
+      }
+
+      try {
+        const updated = await app.prisma.task.update({
+          where: { id },
+          data,
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        return reply.send(updated);
+      } catch (err) {
+        // Prisma P2025 means record to update was not found
+        if (err.code === 'P2025') {
+          return reply.code(404).send({ error: 'Task not found' });
+        }
+
+        req.log.error({ err }, 'Failed to update task'); // log to Pino
+        return reply.code(500).send({ error: 'Failed to update task' });
+      }
+    }
+  );
+
+  // POST /api/tasks/advance – move task forward one status.
+  app.post(
+    '/advance',
+    {
+      preHandler: authPreHandler,
+      schema: {
+        body: {
+          type: 'object',
+          required: ['taskId', 'from', 'to'],
+          additionalProperties: false,
+          properties: {
+            taskId: { type: 'integer' },
+            from: { type: 'string', enum: STATUS_FLOW },
+            to: { type: 'string', enum: STATUS_FLOW },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            required: ['id', 'title', 'status'],
+            additionalProperties: false,
+            properties: {
+              id: { type: 'integer' },
+              title: { type: 'string' },
+              status: { type: 'string', enum: STATUS_FLOW },
+            },
+          },
+          400: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            required: ['error'],
+            additionalProperties: false,
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const { taskId, from, to } = req.body;
+
+      const task = await app.prisma.task.findUnique({
+        where: { id: taskId },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+        },
+      });
+
+      if (!task) return reply.code(404).send({ error: 'Task not found' });
+
+      if (task.status !== from) {
+        return reply
+          .code(400)
+          .send({ error: 'Invalid from status for this task' });
+      }
+
+      // Use shared helper to enforce "one step forward" rule.
+      const canMoveForward = isNextStatus(from, to);
+
+      if (!canMoveForward) {
+        return reply.code(400).send({ error: 'Unsupported status transition' });
+      }
+
+      const updated = await app.prisma.task.update({
+        where: { id: taskId },
+        data: { status: to },
+        select: { id: true, title: true, status: true },
+      });
+
+      return updated;
+    }
+  );
+}

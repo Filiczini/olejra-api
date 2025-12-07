@@ -1,37 +1,43 @@
-# 📦 Olejra Backend
+# Olejra Backend
 
 > Simple backend for the **Olejra** project — a lightweight Jira-like board.  
 > Built with **Node.js + Fastify**, serves as API for the frontend.
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
-- **Node.js 20**  
-- **Fastify**  
-- (planned) **PostgreSQL + Prisma**  
-- (planned) **JWT authentication**
+- **Node.js 20**
+- **Fastify**
+- **PostgreSQL + Prisma**
+- **JWT authentication (httpOnly cookies) + Prisma**
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 olejra-backend/
 ├─ src/
-│  └─ index.js      # main server file
+│  └─ generated
+│  └─ plugins
+│  └─ routes
+│  └─ server.js      # main server file
+│  └─ test-db        # check db
 ├─ package.json
 ├─ .gitignore
 └─ README.md
 ```
+
 ---
 
-## ▶️ Getting Started
+## Getting Started
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/<user>/olejra-backend.git
-   cd olejra-backend
+   git clone https://github.com/filiczini/olejra-api
+   cd olejra-api
+   ```
 2. **Install dependencies**
    ```bash
    npm install
@@ -43,20 +49,43 @@ olejra-backend/
    # production mode
    npm start
    ```
----
-## 🌐 API Endpoints (current)
-```bash
-GET / → { "message": "Olejra API is running" }
-GET /health → { "ok": true }
-```
+
 ---
 
-## 🔮 Roadmap
+## 🌐 API
+
+### Flow
+
+1. `POST /api/auth/login` → server signs JWT and sets **httpOnly** cookie
+2. `GET /api/auth/me` (private) → verifies JWT from cookie via `req.jwtVerify({ onlyCookie: true })`, returns a minimal profile
+3. `POST /api/auth/logout` → clears auth cookie
+
+### Responses
+
 ```bash
-Add CORS & dotenv
-PostgreSQL integration (Neon/Supabase)
-Prisma schema & migrations
-Auth (login with JWT)
-Tasks API (create, move forward, done)
+POST /api/auth/login ['ok', 'invalid credentials']
+POST /api/auth/logout -> ok
+GET /api/auth/me -> user (id, email)
 ```
+
+---
+
+## Tasks API
+
+- `GET /api/tasks` → list user's tasks
+- `POST /api/tasks` → create task
+- `POST /api/tasks/advance` → advance task via payload `{ taskId, from, to }`
+
+---
+
+## Roadmap
+
+```bash
+[x] Cookie-based auth
+[x] Prisma schema & migrations
+[x] Tasks API (GET, POST create, POST advance)
+[ ] Task details API (GET /tasks/:id)
+[ ] Swagger UI (optional)
+```
+
 ---
