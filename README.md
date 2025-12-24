@@ -14,6 +14,20 @@
 
 ---
 
+## Branch name guide
+- feat     - new functionality
+- fix      - bug fix
+- refactor - code change without behavior change
+- docs     - documentation only
+- chore    - maintenance (deps, scripts, formatting, tooling)
+- test     - tests only
+- build    - build system changes
+- ci       - CI/CD changes
+- perf     - performance improvement
+- style    - formatting
+
+---
+
 ## Project Structure
 
 ```text
